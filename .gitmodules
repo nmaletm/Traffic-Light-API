@@ -1,0 +1,3 @@
+[submodule "thirdparty/slim"]
+	path = thirdparty/slim
+	url = https://github.com/codeguy/Slim
