@@ -1,3 +1,6 @@
 [submodule "thirdparty/slim"]
 	path = thirdparty/slim
 	url = https://github.com/codeguy/Slim
+[submodule "thirdparty/pusher-php-server"]
+	path = thirdparty/pusher-php-server
+	url = https://github.com/pusher/pusher-php-server.git

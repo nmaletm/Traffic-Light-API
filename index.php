@@ -1,4 +1,6 @@
 <?php
+require($_SERVER['DOCUMENT_ROOT'].'/api/thirdparty/pusher-php-server/lib/Pusher.php');
+
 chdir('..');
 include_once $_SERVER['DOCUMENT_ROOT']."/api/conf/database.php";
 require $_SERVER['DOCUMENT_ROOT'].'/api/thirdparty/slim/Slim/Slim.php';
@@ -8,9 +10,10 @@ $app = new \Slim\Slim();
 
 
 $app->get('/trafficLight/:id/', 'getTrafficLight');
-$app->post('/trafficLight/:id/', 'addTrafficLight');
+$app->post('/trafficLight/:estat/', 'addTrafficLight');
 $app->put('/trafficLight/:estat/', 'updateTrafficLight');
 $app->delete('/trafficLight/:id/', 'deleteTrafficLight');
+$app->post('/trafficLight/:id/message/', 'addTrafficLightMessage');
 
 $app->run();
 
@@ -39,6 +42,7 @@ function addTrafficLight($estat) {
     $stmt->execute();
     $trafficlight->id = $db->lastInsertId();
     $db = null;
+    updateStatusPusher($trafficlight->id, $estat);
     echo json_encode($trafficlight);
   } catch(PDOException $e) {
     echo '{"error":{"text":'. $e->getMessage() .'}}';
@@ -57,6 +61,8 @@ function updateTrafficLight($id) {
     $stmt->bindParam("id", $id);
     $stmt->execute();
     $db = null;
+
+    updateStatusPusher($id, $trafficlight['estat']);
     echo json_encode($trafficlight);
   } catch(PDOException $e) {
     echo '{"error":{"text":'. $e->getMessage() .'}}';
@@ -80,4 +86,23 @@ function getConnection() {
   $dbh = new PDO("mysql:host=".DB_HOST.";dbname=".DB_NAME, DB_USER, DB_PASS);
   $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
   return $dbh;
+}
+
+
+function addTrafficLightMessage($id) {
+  $request = \Slim\Slim::getInstance()->request();
+  $body = $request->getBody();
+  parse_str($body, $trafficlight);
+  sendMessagePusher($id, $trafficlight['text']);
+}
+
+
+function updateStatusPusher($id, $estat){
+  $pusher = new Pusher(PUSHER_COM_KEY, PUSHER_COM_SECRET, PUSHER_COM_APP_ID);
+  $pusher->trigger('trafficLight', 'change', array('id' => $id, 'estat'=>$estat) );
+}
+
+function sendMessagePusher($id, $text){
+  $pusher = new Pusher(PUSHER_COM_KEY, PUSHER_COM_SECRET, PUSHER_COM_APP_ID);
+  $pusher->trigger('trafficLight', 'message', array('id' => $id, 'text'=>$text) );
 }
